@@ -117,29 +117,14 @@ jobs:
           echo "=== Certificate type ==="
           security find-identity -v build.keychain
 
-      - name: Update project settings
+      - name: Update Info.plist Bundle ID
         run: |
-          # 更新 Bundle ID
-          /usr/libexec/PlistBuddy -c "Set :objects:G10001:buildSettings:PRODUCT_BUNDLE_IDENTIFIER ${{ env.BUNDLE_ID }}" BDSManager.xcodeproj/project.pbxproj
-          /usr/libexec/PlistBuddy -c "Set :objects:G10002:buildSettings:PRODUCT_BUNDLE_IDENTIFIER ${{ env.BUNDLE_ID }}" BDSManager.xcodeproj/project.pbxproj
+          # 只修改 Info.plist（XML格式，PlistBuddy可以处理）
           /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier ${{ env.BUNDLE_ID }}" BDSManager/Info.plist
+          echo "✅ Info.plist Bundle ID 更新为: ${{ env.BUNDLE_ID }}"
 
-          # 更新 Team ID
-          /usr/libexec/PlistBuddy -c "Set :objects:G10001:buildSettings:DEVELOPMENT_TEAM ${{ env.TEAM_ID }}" BDSManager.xcodeproj/project.pbxproj
-          /usr/libexec/PlistBuddy -c "Set :objects:G10002:buildSettings:DEVELOPMENT_TEAM ${{ env.TEAM_ID }}" BDSManager.xcodeproj/project.pbxproj
-
-          # 手动签名
-          /usr/libexec/PlistBuddy -c "Set :objects:G10001:buildSettings:CODE_SIGN_STYLE Manual" BDSManager.xcodeproj/project.pbxproj
-          /usr/libexec/PlistBuddy -c "Set :objects:G10002:buildSettings:CODE_SIGN_STYLE Manual" BDSManager.xcodeproj/project.pbxproj
-
-          # Provisioning Profile
-          /usr/libexec/PlistBuddy -c "Set :objects:G10001:buildSettings:PROVISIONING_PROFILE_SPECIFIER ${{ env.PROFILE_UUID }}" BDSManager.xcodeproj/project.pbxproj
-          /usr/libexec/PlistBuddy -c "Set :objects:G10002:buildSettings:PROVISIONING_PROFILE_SPECIFIER ${{ env.PROFILE_UUID }}" BDSManager.xcodeproj/project.pbxproj
-
-          echo "=== Updated project settings ==="
-          echo "Bundle ID: ${{ env.BUNDLE_ID }}"
-          echo "Team ID: ${{ env.TEAM_ID }}"
-          echo "Profile UUID: ${{ env.PROFILE_UUID }}"
+          # 查看当前 scheme
+          xcodebuild -project BDSManager.xcodeproj -list 2>/dev/null || echo "无法列出 scheme"
 
       - name: Build Archive
         run: |
@@ -149,6 +134,26 @@ jobs:
             CERT_IDENTITY="iPhone Distribution"
           fi
           echo "Using identity: $CERT_IDENTITY"
+          echo "Bundle ID: ${{ env.BUNDLE_ID }}"
+          echo "Team ID: ${{ env.TEAM_ID }}"
+          echo "Profile UUID: ${{ env.PROFILE_UUID }}"
+
+          # 用 sed 修改 project.pbxproj（ASCII格式用sed更可靠）
+          echo "=== 修改 project.pbxproj ==="
+          
+          # 修改所有 PRODUCT_BUNDLE_IDENTIFIER
+          sed -i '' "s/com\.bds\.manager/${{ env.BUNDLE_ID }}/g" BDSManager.xcodeproj/project.pbxproj
+          
+          # 修改 DEVELOPMENT_TEAM
+          sed -i '' "s/DEVELOPMENT_TEAM = \"\";/DEVELOPMENT_TEAM = \"${{ env.TEAM_ID }}\";/g" BDSManager.xcodeproj/project.pbxproj
+          
+          # 设置 CODE_SIGN_STYLE 为 Manual
+          sed -i '' "s/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g" BDSManager.xcodeproj/project.pbxproj
+          
+          # 设置 PROVISIONING_PROFILE_SPECIFIER
+          sed -i '' "s/PROVISIONING_PROFILE_SPECIFIER = \"\";/PROVISIONING_PROFILE_SPECIFIER = \"${{ env.PROFILE_UUID }}\";/g" BDSManager.xcodeproj/project.pbxproj
+          
+          echo "✅ project.pbxproj 修改完成"
 
           xcodebuild archive \
             -project BDSManager.xcodeproj \
@@ -159,12 +164,14 @@ jobs:
             CODE_SIGN_IDENTITY="$CERT_IDENTITY" \
             PROVISIONING_PROFILE_SPECIFIER="${{ env.PROFILE_UUID }}" \
             DEVELOPMENT_TEAM="${{ env.TEAM_ID }}" \
+            PRODUCT_BUNDLE_IDENTIFIER="${{ env.BUNDLE_ID }}" \
+            CODE_SIGN_STYLE=Manual \
             | tee build.log
 
           # 检查是否成功
           if [ ! -d "$HOME/BDSManager.xcarchive" ]; then
             echo "❌ Archive 失败"
-            tail -50 build.log
+            tail -80 build.log
             exit 1
           fi
           echo "✅ Archive 成功"
