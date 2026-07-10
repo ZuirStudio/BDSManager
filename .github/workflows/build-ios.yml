@@ -41,31 +41,55 @@ jobs:
           ls -la profile.mobileprovision
           echo "Profile file size: $(wc -c < profile.mobileprovision) bytes"
 
-          # 验证 p12 密码（使用 openssl）
+          # 验证 p12 密码（使用 openssl + legacy 模式支持旧 RC2 算法）
           echo "=== Verifying P12 password ==="
-          openssl pkcs12 -in cert.p12 -noout -passin pass:"$P12_PASSWORD" 2>&1 || {
-            echo "❌ openssl 验证失败！尝试无密码..."
-            openssl pkcs12 -in cert.p12 -noout -passin pass: 2>&1 || {
-              echo "❌ 无密码也失败！Base64 可能损坏"
-              echo "Base64 前 100 字符: ${CLEAN_P12:0:100}"
-              exit 1
-            }
-            echo "✅ 证书无密码"
-            P12_PASSWORD=""
-          }
-          echo "✅ 密码验证成功"
+          PASSWORD_OK=false
+          if openssl pkcs12 -in cert.p12 -noout -passin pass:"$P12_PASSWORD" -legacy 2>/dev/null; then
+            echo "✅ 密码验证成功（legacy RC2）"
+            PASSWORD_OK=true
+          elif openssl pkcs12 -in cert.p12 -noout -passin pass:"$P12_PASSWORD" 2>/dev/null; then
+            echo "✅ 密码验证成功"
+            PASSWORD_OK=true
+          else
+            echo "❌ 密码验证失败！尝试空密码..."
+            if openssl pkcs12 -in cert.p12 -noout -passin pass: -legacy 2>/dev/null; then
+              echo "✅ 证书无密码（legacy RC2）"
+              P12_PASSWORD=""
+              PASSWORD_OK=true
+            elif openssl pkcs12 -in cert.p12 -noout -passin pass: 2>/dev/null; then
+              echo "✅ 证书无密码"
+              P12_PASSWORD=""
+              PASSWORD_OK=true
+            fi
+          fi
+          
+          if [ "$PASSWORD_OK" = false ]; then
+            echo "❌ 所有密码尝试都失败"
+            echo "尝试用 security 直接导入看具体错误..."
+          fi
 
           # 创建钥匙串
           security create-keychain -p "bdskeychain" build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p "bdskeychain" build.keychain
 
-          # 导入证书 - 尝试不同方式
+          # 导入证书 - 尝试密码和空密码
           echo "=== Importing certificate ==="
-          if [ -z "$P12_PASSWORD" ]; then
-            security import cert.p12 -k build.keychain -P "" -T /usr/bin/codesign -f pkcs12
-          else
-            security import cert.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign -f pkcs12
+          IMPORT_SUCCESS=false
+          
+          if [ "$PASSWORD_OK" = true ]; then
+            security import cert.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign -f pkcs12 2>&1 && IMPORT_SUCCESS=true
+          fi
+          
+          if [ "$IMPORT_SUCCESS" = false ]; then
+            echo "尝试用密码导入失败，尝试空密码..."
+            security import cert.p12 -k build.keychain -P "" -T /usr/bin/codesign -f pkcs12 2>&1 && IMPORT_SUCCESS=true
+          fi
+          
+          if [ "$IMPORT_SUCCESS" = false ]; then
+            echo "❌ 证书导入失败！"
+            echo "请确认 P12 证书和密码是否正确"
+            exit 1
           fi
 
           security set-key-partition-list -S apple-tool:,apple: -s -k "bdskeychain" build.keychain
