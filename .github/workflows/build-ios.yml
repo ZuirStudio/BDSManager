@@ -1,0 +1,125 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Decode signing files
+        env:
+          P12_BASE64: ${{ secrets.P12_CERTIFICATE }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          MOBILEPROVISION_BASE64: ${{ secrets.MOBILEPROVISION }}
+        run: |
+          # 创建钥匙串
+          security create-keychain -p "bdskeychain" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "bdskeychain" build.keychain
+
+          # 导入证书
+          echo "$P12_BASE64" | base64 --decode > cert.p12
+          security import cert.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "bdskeychain" build.keychain
+
+          # 导入描述文件
+          echo "$MOBILEPROVISION_BASE64" | base64 --decode > profile.mobileprovision
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+
+          # 获取证书信息
+          UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< "$(security cms -D -i profile.mobileprovision)")
+          echo "Provisioning Profile UUID: $UUID"
+          echo "PROFILE_UUID=$UUID" >> $GITHUB_ENV
+
+          # 获取 Team ID
+          TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print :TeamIdentifier:0" /dev/stdin <<< "$(security cms -D -i profile.mobileprovision)")
+          echo "Team ID: $TEAM_ID"
+          echo "TEAM_ID=$TEAM_ID" >> $GITHUB_ENV
+
+          # 获取 Bundle ID
+          BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /dev/stdin <<< "$(security cms -D -i profile.mobileprovision)" | sed 's/^[^.]*\.//')
+          echo "Bundle ID: $BUNDLE_ID"
+          echo "BUNDLE_ID=$BUNDLE_ID" >> $GITHUB_ENV
+
+      - name: Update project settings
+        run: |
+          # 更新 Bundle ID 匹配描述文件
+          /usr/libexec/PlistBuddy -c "Set :objects:G10001:buildSettings:PRODUCT_BUNDLE_IDENTIFIER ${{ env.BUNDLE_ID }}" BDSManager.xcodeproj/project.pbxproj
+          /usr/libexec/PlistBuddy -c "Set :objects:G10002:buildSettings:PRODUCT_BUNDLE_IDENTIFIER ${{ env.BUNDLE_ID }}" BDSManager.xcodeproj/project.pbxproj
+
+          # 更新 Info.plist Bundle ID
+          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier ${{ env.BUNDLE_ID }}" BDSManager/Info.plist
+
+          # 更新 Team ID
+          /usr/libexec/PlistBuddy -c "Set :objects:G10001:buildSettings:DEVELOPMENT_TEAM ${{ env.TEAM_ID }}" BDSManager.xcodeproj/project.pbxproj
+          /usr/libexec/PlistBuddy -c "Set :objects:G10002:buildSettings:DEVELOPMENT_TEAM ${{ env.TEAM_ID }}" BDSManager.xcodeproj/project.pbxproj
+
+          # 设置手动签名
+          /usr/libexec/PlistBuddy -c "Set :objects:G10001:buildSettings:CODE_SIGN_STYLE Manual" BDSManager.xcodeproj/project.pbxproj
+          /usr/libexec/PlistBuddy -c "Set :objects:G10002:buildSettings:CODE_SIGN_STYLE Manual" BDSManager.xcodeproj/project.pbxproj
+
+          # 设置 Provisioning Profile
+          /usr/libexec/PlistBuddy -c "Set :objects:G10001:buildSettings:PROVISIONING_PROFILE_SPECIFIER ${{ env.PROFILE_UUID }}" BDSManager.xcodeproj/project.pbxproj
+          /usr/libexec/PlistBuddy -c "Set :objects:G10002:buildSettings:PROVISIONING_PROFILE_SPECIFIER ${{ env.PROFILE_UUID }}" BDSManager.xcodeproj/project.pbxproj
+
+      - name: Build Archive
+        run: |
+          xcodebuild archive \
+            -project BDSManager.xcodeproj \
+            -scheme BDSManager \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath $HOME/BDSManager.xcarchive \
+            CODE_SIGN_IDENTITY="iPhone Distribution" \
+            PROVISIONING_PROFILE="${{ env.PROFILE_UUID }}"
+
+      - name: Export IPA
+        run: |
+          cat > ExportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>ad-hoc</string>
+            <key>teamID</key>
+            <string>${{ env.TEAM_ID }}</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${{ env.BUNDLE_ID }}</key>
+              <dict>
+                <key>identifier</key>
+                <string>${{ env.PROFILE_UUID }}</string>
+                <key>name</key>
+                <string>${{ env.PROFILE_UUID }}</string>
+              </dict>
+            </dict>
+          </dict>
+          </plist>
+          EOF
+
+          xcodebuild -exportArchive \
+            -archivePath $HOME/BDSManager.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath $HOME/export
+
+      - name: Cleanup keychain
+        if: always()
+        run: |
+          security delete-keychain build.keychain || true
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: BDSManager.ipa
+          path: $HOME/export/*.ipa
+          retention-days: 30

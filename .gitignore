@@ -1,0 +1,25 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcuserdatad/
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+
+# Swift Package Manager
+.build/
+Packages/
+
+# macOS
+.DS_Store
+
+# Secrets
+*.p12
+*.mobileprovision
+cert_base64.txt
+profile_base64.txt
+
+# Node (legacy web project)
+node_modules/
+dist/

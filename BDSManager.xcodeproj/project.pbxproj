@@ -1,0 +1,158 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10001 /* BDSManagerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10001; };
+		A10002 /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002; };
+		A10003 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10003; };
+		A10004 /* ModInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10004; };
+		A10005 /* RCONService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10005; };
+		A10006 /* ServerStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10006; };
+		A10007 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10007; };
+		A10008 /* ServersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10008; };
+		A10009 /* AddServerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10009; };
+		A10010 /* ServerManageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10010; };
+		A10011 /* PlayersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10011; };
+		A10012 /* StatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10012; };
+		A10013 /* ConsoleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10013; };
+		A10014 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B10014; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B10001 /* BDSManagerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BDSManagerApp.swift; sourceTree = "<group>"; };
+		B10002 /* Server.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Server.swift; sourceTree = "<group>"; };
+		B10003 /* Player.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Player.swift; sourceTree = "<group>"; };
+		B10004 /* ModInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModInfo.swift; sourceTree = "<group>"; };
+		B10005 /* RCONService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RCONService.swift; sourceTree = "<group>"; };
+		B10006 /* ServerStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerStore.swift; sourceTree = "<group>"; };
+		B10007 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		B10008 /* ServersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServersView.swift; sourceTree = "<group>"; };
+		B10009 /* AddServerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddServerView.swift; sourceTree = "<group>"; };
+		B10010 /* ServerManageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerManageView.swift; sourceTree = "<group>"; };
+		B10011 /* PlayersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayersView.swift; sourceTree = "<group>"; };
+		B10012 /* StatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusView.swift; sourceTree = "<group>"; };
+		B10013 /* ConsoleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsoleView.swift; sourceTree = "<group>"; };
+		B10014 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C10001 /* BDSManager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BDSManager.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		D10001 = {isa = PBXGroup; children = (D10002 D10010 D10008 D10007 D10006 D10009 D10005 D10004); sourceTree = "<group>"; };
+		D10002 = {isa = PBXGroup; children = (B10001); path = BDSManager; sourceTree = "<group>"; };
+		D10003 = {isa = PBXGroup; children = (B10002 B10003 B10004); path = Models; sourceTree = "<group>"; };
+		D10004 = {isa = PBXGroup; children = (B10005); path = Services; sourceTree = "<group>"; };
+		D10005 = {isa = PBXGroup; children = (B10006); path = ViewModels; sourceTree = "<group>"; };
+		D10006 = {isa = PBXGroup; children = (D10003 D10004 D10005 D10011 D10012 D10013 D10014 B10014); path = BDSManager; sourceTree = "<group>"; };
+		D10007 = {isa = PBXGroup; children = (B10007); path = Views; sourceTree = "<group>"; };
+		D10008 = {isa = PBXGroup; children = (D10007); path = BDSManager; sourceTree = "<group>"; };
+		D10009 = {isa = PBXGroup; children = (B10008 B10009 B10010); path = Servers; sourceTree = "<group>"; };
+		D10010 = {isa = PBXGroup; children = (B10011); path = Players; sourceTree = "<group>"; };
+		D10011 = {isa = PBXGroup; children = (D10009 D10010 D10012 D10013); path = Views; sourceTree = "<group>"; };
+		D10012 = {isa = PBXGroup; children = (B10012); path = Status; sourceTree = "<group>"; };
+		D10013 = {isa = PBXGroup; children = (B10013); path = Console; sourceTree = "<group>"; };
+		D10014 = {isa = PBXGroup; children = (D10002); sourceTree = "<group>"; };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E10001 /* BDSManager */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F10003;
+			buildPhases = (E10002 E10003 E10004 E10005);
+			buildRules = ();
+			dependencies = ();
+			name = BDSManager;
+			productName = BDSManager;
+			productReference = C10001;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E10010 = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = { E10001 = { CreatedOnToolsVersion = 16.0; }; };
+			};
+			buildConfigurationList = F10001;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = "zh-Hans";
+			hasScannedForEncodings = 0;
+			knownRegions = (en "zh-Hans");
+			mainGroup = D10001;
+			productRefGroup = D10014;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (E10001);
+		};
+/* End PBXProject section */
+
+/* Begin XCBuildConfiguration section */
+		G10001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BDSManager/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bds.manager;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		G10002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BDSManager/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bds.manager;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F10001 /* Build configuration list for PBXProject "BDSManager" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (G10001 G10002);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F10003 /* Build configuration list for PBXNativeTarget "BDSManager" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (G10001 G10002);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E10010;
+}
