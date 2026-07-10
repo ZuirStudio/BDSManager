@@ -18,18 +18,59 @@ jobs:
           P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
           MOBILEPROVISION_BASE64: ${{ secrets.MOBILEPROVISION }}
         run: |
+          # 清理 Base64 字符串中的换行和空格
+          CLEAN_P12=$(echo "$P12_BASE64" | tr -d ' \n\r\t')
+          CLEAN_PP=$(echo "$MOBILEPROVISION_BASE64" | tr -d ' \n\r\t')
+
+          # 验证 Base64 长度
+          echo "P12 Base64 length: ${#CLEAN_P12}"
+          echo "Mobile Provision Base64 length: ${#CLEAN_PP}"
+
+          # 解码文件
+          echo "$CLEAN_P12" | base64 -D > cert.p12
+          echo "$CLEAN_PP" | base64 -D > profile.mobileprovision
+
+          # 验证文件
+          echo "=== cert.p12 info ==="
+          file cert.p12
+          ls -la cert.p12
+          echo "P12 file size: $(wc -c < cert.p12) bytes"
+
+          echo "=== profile.mobileprovision info ==="
+          file profile.mobileprovision
+          ls -la profile.mobileprovision
+          echo "Profile file size: $(wc -c < profile.mobileprovision) bytes"
+
+          # 验证 p12 密码（使用 openssl）
+          echo "=== Verifying P12 password ==="
+          openssl pkcs12 -in cert.p12 -noout -passin pass:"$P12_PASSWORD" 2>&1 || {
+            echo "❌ openssl 验证失败！尝试无密码..."
+            openssl pkcs12 -in cert.p12 -noout -passin pass: 2>&1 || {
+              echo "❌ 无密码也失败！Base64 可能损坏"
+              echo "Base64 前 100 字符: ${CLEAN_P12:0:100}"
+              exit 1
+            }
+            echo "✅ 证书无密码"
+            P12_PASSWORD=""
+          }
+          echo "✅ 密码验证成功"
+
           # 创建钥匙串
           security create-keychain -p "bdskeychain" build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p "bdskeychain" build.keychain
 
-          # 导入证书
-          echo "$P12_BASE64" | base64 --decode > cert.p12
-          security import cert.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
+          # 导入证书 - 尝试不同方式
+          echo "=== Importing certificate ==="
+          if [ -z "$P12_PASSWORD" ]; then
+            security import cert.p12 -k build.keychain -P "" -T /usr/bin/codesign -f pkcs12
+          else
+            security import cert.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign -f pkcs12
+          fi
+
           security set-key-partition-list -S apple-tool:,apple: -s -k "bdskeychain" build.keychain
 
           # 导入描述文件
-          echo "$MOBILEPROVISION_BASE64" | base64 --decode > profile.mobileprovision
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
 
@@ -48,47 +89,80 @@ jobs:
           echo "Bundle ID: $BUNDLE_ID"
           echo "BUNDLE_ID=$BUNDLE_ID" >> $GITHUB_ENV
 
+          # 检查证书类型
+          echo "=== Certificate type ==="
+          security find-identity -v build.keychain
+
       - name: Update project settings
         run: |
-          # 更新 Bundle ID 匹配描述文件
+          # 更新 Bundle ID
           /usr/libexec/PlistBuddy -c "Set :objects:G10001:buildSettings:PRODUCT_BUNDLE_IDENTIFIER ${{ env.BUNDLE_ID }}" BDSManager.xcodeproj/project.pbxproj
           /usr/libexec/PlistBuddy -c "Set :objects:G10002:buildSettings:PRODUCT_BUNDLE_IDENTIFIER ${{ env.BUNDLE_ID }}" BDSManager.xcodeproj/project.pbxproj
-
-          # 更新 Info.plist Bundle ID
           /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier ${{ env.BUNDLE_ID }}" BDSManager/Info.plist
 
           # 更新 Team ID
           /usr/libexec/PlistBuddy -c "Set :objects:G10001:buildSettings:DEVELOPMENT_TEAM ${{ env.TEAM_ID }}" BDSManager.xcodeproj/project.pbxproj
           /usr/libexec/PlistBuddy -c "Set :objects:G10002:buildSettings:DEVELOPMENT_TEAM ${{ env.TEAM_ID }}" BDSManager.xcodeproj/project.pbxproj
 
-          # 设置手动签名
+          # 手动签名
           /usr/libexec/PlistBuddy -c "Set :objects:G10001:buildSettings:CODE_SIGN_STYLE Manual" BDSManager.xcodeproj/project.pbxproj
           /usr/libexec/PlistBuddy -c "Set :objects:G10002:buildSettings:CODE_SIGN_STYLE Manual" BDSManager.xcodeproj/project.pbxproj
 
-          # 设置 Provisioning Profile
+          # Provisioning Profile
           /usr/libexec/PlistBuddy -c "Set :objects:G10001:buildSettings:PROVISIONING_PROFILE_SPECIFIER ${{ env.PROFILE_UUID }}" BDSManager.xcodeproj/project.pbxproj
           /usr/libexec/PlistBuddy -c "Set :objects:G10002:buildSettings:PROVISIONING_PROFILE_SPECIFIER ${{ env.PROFILE_UUID }}" BDSManager.xcodeproj/project.pbxproj
 
+          echo "=== Updated project settings ==="
+          echo "Bundle ID: ${{ env.BUNDLE_ID }}"
+          echo "Team ID: ${{ env.TEAM_ID }}"
+          echo "Profile UUID: ${{ env.PROFILE_UUID }}"
+
       - name: Build Archive
         run: |
+          # 自动检测证书类型
+          CERT_IDENTITY=$(security find-identity -v build.keychain | grep -oE "iPhone (Distribution|Developer)" | head -1)
+          if [ -z "$CERT_IDENTITY" ]; then
+            CERT_IDENTITY="iPhone Distribution"
+          fi
+          echo "Using identity: $CERT_IDENTITY"
+
           xcodebuild archive \
             -project BDSManager.xcodeproj \
             -scheme BDSManager \
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath $HOME/BDSManager.xcarchive \
-            CODE_SIGN_IDENTITY="iPhone Distribution" \
-            PROVISIONING_PROFILE="${{ env.PROFILE_UUID }}"
+            CODE_SIGN_IDENTITY="$CERT_IDENTITY" \
+            PROVISIONING_PROFILE_SPECIFIER="${{ env.PROFILE_UUID }}" \
+            DEVELOPMENT_TEAM="${{ env.TEAM_ID }}" \
+            | tee build.log
+
+          # 检查是否成功
+          if [ ! -d "$HOME/BDSManager.xcarchive" ]; then
+            echo "❌ Archive 失败"
+            tail -50 build.log
+            exit 1
+          fi
+          echo "✅ Archive 成功"
 
       - name: Export IPA
         run: |
+          # 检测导出方式
+          CERT_IDENTITY=$(security find-identity -v build.keychain | grep -oE "iPhone (Distribution|Developer)" | head -1)
+          if echo "$CERT_IDENTITY" | grep -q "Developer"; then
+            METHOD="development"
+          else
+            METHOD="ad-hoc"
+          fi
+          echo "Export method: $METHOD"
+
           cat > ExportOptions.plist << EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
             <key>method</key>
-            <string>ad-hoc</string>
+            <string>${METHOD}</string>
             <key>teamID</key>
             <string>${{ env.TEAM_ID }}</string>
             <key>signingStyle</key>
@@ -110,12 +184,22 @@ jobs:
           xcodebuild -exportArchive \
             -archivePath $HOME/BDSManager.xcarchive \
             -exportOptionsPlist ExportOptions.plist \
-            -exportPath $HOME/export
+            -exportPath $HOME/export \
+            | tee export.log
+
+          if ls $HOME/export/*.ipa 1> /dev/null 2>&1; then
+            echo "✅ IPA 导出成功"
+            ls -la $HOME/export/
+          else
+            echo "❌ IPA 导出失败"
+            tail -50 export.log
+            exit 1
+          fi
 
       - name: Cleanup keychain
         if: always()
         run: |
-          security delete-keychain build.keychain || true
+          security delete-keychain build.keychain 2>/dev/null || true
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
@@ -123,3 +207,12 @@ jobs:
           name: BDSManager.ipa
           path: $HOME/export/*.ipa
           retention-days: 30
+
+      - name: Upload build logs (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            build.log
+            export.log
