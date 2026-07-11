@@ -171,30 +171,34 @@ jobs:
           fi
           echo "Export method: $METHOD"
 
-          cat > ExportOptions.plist << EOF
+          cat > ExportOptions.plist << 'EOF'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
             <key>method</key>
-            <string>${METHOD}</string>
+            <string>METHOD_PLACEHOLDER</string>
             <key>teamID</key>
-            <string>${{ env.TEAM_ID }}</string>
+            <string>TEAM_ID_PLACEHOLDER</string>
             <key>signingStyle</key>
             <string>manual</string>
             <key>provisioningProfiles</key>
             <dict>
-              <key>${{ env.BUNDLE_ID }}</key>
-              <dict>
-                <key>identifier</key>
-                <string>${{ env.PROFILE_UUID }}</string>
-                <key>name</key>
-                <string>${{ env.PROFILE_UUID }}</string>
-              </dict>
+              <key>BUNDLE_ID_PLACEHOLDER</key>
+              <string>PROFILE_UUID_PLACEHOLDER</string>
             </dict>
           </dict>
           </plist>
           EOF
+
+          # 替换占位符
+          sed -i '' "s/METHOD_PLACEHOLDER/${METHOD}/g" ExportOptions.plist
+          sed -i '' "s/TEAM_ID_PLACEHOLDER/${{ env.TEAM_ID }}/g" ExportOptions.plist
+          sed -i '' "s/BUNDLE_ID_PLACEHOLDER/${{ env.BUNDLE_ID }}/g" ExportOptions.plist
+          sed -i '' "s/PROFILE_UUID_PLACEHOLDER/${{ env.PROFILE_UUID }}/g" ExportOptions.plist
+
+          echo "=== ExportOptions.plist ==="
+          cat ExportOptions.plist
 
           xcodebuild -exportArchive \
             -archivePath $HOME/BDSManager.xcarchive \
