@@ -203,12 +203,12 @@ jobs:
           xcodebuild -exportArchive \
             -archivePath $HOME/BDSManager.xcarchive \
             -exportOptionsPlist ExportOptions.plist \
-            -exportPath $HOME/export \
+            -exportPath ./export \
             | tee export.log
 
-          if ls $HOME/export/*.ipa 1> /dev/null 2>&1; then
+          if ls ./export/*.ipa 1> /dev/null 2>&1; then
             echo "✅ IPA 导出成功"
-            ls -la $HOME/export/
+            ls -la ./export/
           else
             echo "❌ IPA 导出失败"
             tail -50 export.log
@@ -224,7 +224,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: BDSManager.ipa
-          path: $HOME/export/*.ipa
+          path: export/*.ipa
           retention-days: 30
 
       - name: Upload build logs (on failure)
