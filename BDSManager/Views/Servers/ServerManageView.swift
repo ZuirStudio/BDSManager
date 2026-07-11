@@ -4,80 +4,117 @@ struct ServerManageView: View {
     @EnvironmentObject var store: ServerStore
 
     var body: some View {
-        List {
-            Section {
+        ScrollView {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 NavigationLink {
                     ServerSettingsView()
                 } label: {
-                    ManageRow(icon: "gearshape", title: "服务器设置", subtitle: "修改服务器属性配置")
+                    GlassManageCard(icon: "gearshape", title: "服务器设置", subtitle: "修改配置", color: .blue)
                 }
+                .buttonStyle(.plain)
 
                 NavigationLink {
                     OpsListView()
                 } label: {
-                    ManageRow(icon: "crown", title: "管理员列表", subtitle: "管理服务器 OP 权限")
+                    GlassManageCard(icon: "crown", title: "管理员", subtitle: "OP 权限", color: .yellow)
                 }
+                .buttonStyle(.plain)
 
                 NavigationLink {
                     WhitelistView()
                 } label: {
-                    ManageRow(icon: "list.bullet.clipboard", title: "白名单", subtitle: "管理服务器白名单")
+                    GlassManageCard(icon: "list.bullet.clipboard", title: "白名单", subtitle: "玩家管理", color: .green)
                 }
+                .buttonStyle(.plain)
 
                 NavigationLink {
                     BansView()
                 } label: {
-                    ManageRow(icon: "hammer", title: "封禁列表", subtitle: "查看和管理封禁玩家")
+                    GlassManageCard(icon: "hammer", title: "封禁列表", subtitle: "封禁管理", color: .red)
                 }
+                .buttonStyle(.plain)
 
                 NavigationLink {
                     PluginsManageView()
                 } label: {
-                    ManageRow(icon: "puzzlepiece.extension", title: "插件管理", subtitle: "管理服务器插件/Mod")
+                    GlassManageCard(icon: "puzzlepiece.extension", title: "插件管理", subtitle: "Mod 管理", color: .orange)
                 }
+                .buttonStyle(.plain)
 
                 NavigationLink {
                     BackupManageView()
                 } label: {
-                    ManageRow(icon: "externaldrive", title: "备份管理", subtitle: "创建和恢复服务器备份")
+                    GlassManageCard(icon: "externaldrive", title: "备份管理", subtitle: "创建恢复", color: .purple)
                 }
+                .buttonStyle(.plain)
 
                 NavigationLink {
                     StatsView()
                 } label: {
-                    ManageRow(icon: "chart.bar", title: "性能统计", subtitle: "查看服务器历史数据")
+                    GlassManageCard(icon: "chart.bar", title: "性能统计", subtitle: "历史数据", color: .cyan)
                 }
+                .buttonStyle(.plain)
             }
+            .padding(.horizontal)
+            .padding(.top, 12)
+            .padding(.bottom, 20)
         }
-        .listStyle(.insetGrouped)
         .navigationTitle("服务器管理")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .background {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.05, green: 0.1, blue: 0.2),
+                    Color(red: 0.1, green: 0.2, blue: 0.4),
+                    Color(red: 0.15, green: 0.15, blue: 0.3)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+        }
     }
 }
 
-struct ManageRow: View {
+struct GlassManageCard: View {
     let icon: String
     let title: String
     let subtitle: String
+    let color: Color
 
     var body: some View {
-        HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(.blue)
-                .frame(width: 32, height: 32)
-                .background(Color.blue.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .font(.title2)
+                .foregroundStyle(color)
+                .frame(width: 44, height: 44)
+                .background(color.opacity(0.2))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-            VStack(alignment: .leading, spacing: 1) {
+            Spacer()
+
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.body)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.white)
                 Text(subtitle)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.white.opacity(0.6))
             }
         }
-        .padding(.vertical, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .frame(height: 120)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 3)
     }
 }
 
@@ -201,29 +238,56 @@ struct WhitelistView: View {
     @State private var whitelist: [String] = ["Steve", "Alex", "Admin"]
 
     var body: some View {
-        List {
-            ForEach(whitelist, id: \.self) { name in
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                    Text(name)
-                    Spacer()
-                    Button("移除") {
-                        whitelist.removeAll { $0 == name }
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(whitelist, id: \.self) { name in
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                        Text(name)
+                            .foregroundStyle(.white)
+                        Spacer()
+                        Button("移除") {
+                            whitelist.removeAll { $0 == name }
+                        }
+                        .tint(.red)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
                     }
-                    .tint(.red)
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .padding(14)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                    )
+                    .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 2)
                 }
             }
+            .padding(.horizontal)
+            .padding(.top, 12)
+            .padding(.bottom, 20)
         }
-        .listStyle(.insetGrouped)
         .navigationTitle("白名单")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showAdd = true } label: { Image(systemName: "plus") }
             }
+        }
+        .background {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.05, green: 0.1, blue: 0.2),
+                    Color(red: 0.1, green: 0.2, blue: 0.4),
+                    Color(red: 0.15, green: 0.15, blue: 0.3)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
         }
         .alert("添加到白名单", isPresented: $showAdd) {
             TextField("玩家名", text: $newName)
@@ -242,34 +306,61 @@ struct BansView: View {
     @State private var newBanName = ""
 
     var body: some View {
-        List {
-            ForEach(bannedPlayers, id: \.name) { player in
-                HStack {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.red)
-                    VStack(alignment: .leading) {
-                        Text(player.name)
-                            .font(.headline)
-                        Text("原因: \(player.reason)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(bannedPlayers, id: \.name) { player in
+                    HStack {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.red)
+                        VStack(alignment: .leading) {
+                            Text(player.name)
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                            Text("原因: \(player.reason)")
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.6))
+                        }
+                        Spacer()
+                        Button("解封") {
+                            bannedPlayers.removeAll { $0.name == player.name }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
                     }
-                    Spacer()
-                    Button("解封") {
-                        bannedPlayers.removeAll { $0.name == player.name }
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .padding(14)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                    )
+                    .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 2)
                 }
             }
+            .padding(.horizontal)
+            .padding(.top, 12)
+            .padding(.bottom, 20)
         }
-        .listStyle(.insetGrouped)
         .navigationTitle("封禁列表")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showBan = true } label: { Image(systemName: "plus") }
             }
+        }
+        .background {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.05, green: 0.1, blue: 0.2),
+                    Color(red: 0.1, green: 0.2, blue: 0.4),
+                    Color(red: 0.15, green: 0.15, blue: 0.3)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
         }
         .alert("封禁玩家", isPresented: $showBan) {
             TextField("玩家名", text: $newBanName)
@@ -286,39 +377,65 @@ struct PluginsManageView: View {
     @EnvironmentObject var store: ServerStore
 
     var body: some View {
-        List {
-            ForEach(store.mods) { mod in
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Image(systemName: "puzzlepiece.extension")
-                            .foregroundStyle(.blue)
-                        VStack(alignment: .leading) {
-                            Text(mod.name)
-                                .font(.headline)
-                            Text("v\(mod.version)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(store.mods) { mod in
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "puzzlepiece.extension")
+                                .foregroundStyle(.orange)
+                            VStack(alignment: .leading) {
+                                Text(mod.name)
+                                    .font(.headline)
+                                    .foregroundStyle(.white)
+                                Text("v\(mod.version)")
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.6))
+                            }
+                            Spacer()
+                            Toggle("", isOn: Binding(
+                                get: { mod.enabled },
+                                set: { _ in store.toggleMod(mod) }
+                            ))
+                            .labelsHidden()
+                            .tint(.orange)
                         }
-                        Spacer()
-                        Toggle("", isOn: Binding(
-                            get: { mod.enabled },
-                            set: { _ in store.toggleMod(mod) }
-                        ))
-                        .labelsHidden()
-                        .tint(.blue)
+                        if !mod.description.isEmpty {
+                            Text(mod.description)
+                                .font(.subheadline)
+                                .foregroundStyle(.white.opacity(0.7))
+                        }
                     }
-                    if !mod.description.isEmpty {
-                        Text(mod.description)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
+                    .padding(14)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                    )
+                    .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 2)
                 }
-                .padding(.vertical, 4)
             }
+            .padding(.horizontal)
+            .padding(.top, 12)
+            .padding(.bottom, 20)
         }
-        .listStyle(.insetGrouped)
         .navigationTitle("插件管理")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .background {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.05, green: 0.1, blue: 0.2),
+                    Color(red: 0.1, green: 0.2, blue: 0.4),
+                    Color(red: 0.15, green: 0.15, blue: 0.3)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+        }
     }
 }
 
@@ -328,53 +445,119 @@ struct BackupManageView: View {
     @State private var restoringId: UUID? = nil
     @State private var restoreProgress: Double = 0
     @State private var estimatedTime: Int = 0
+    @State private var backupToDelete: BackupInfo? = nil
+    @State private var showDeleteConfirmation = false
 
     var body: some View {
-        List {
-            ForEach(store.backups) { backup in
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Image(systemName: "externaldrive")
-                            .foregroundStyle(.blue)
-                        VStack(alignment: .leading) {
-                            Text(backup.name)
-                                .font(.headline)
-                            Text("\(backup.size) · \(backup.date.formatted(date: .abbreviated, time: .omitted))")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Button(restoringId == backup.id ? "恢复中..." : "恢复") {
-                            startRestore(backup: backup)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .disabled(restoringId != nil)
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                if store.backups.isEmpty {
+                    VStack {
+                        ContentUnavailableView("没有备份", systemImage: "externaldrive", description: Text("点击下方创建备份"))
+                            .foregroundStyle(.white)
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 60)
+                } else {
+                    ForEach(store.backups) { backup in
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Image(systemName: "externaldrive")
+                                    .foregroundStyle(.purple)
+                                VStack(alignment: .leading) {
+                                    Text(backup.name)
+                                        .font(.headline)
+                                        .foregroundStyle(.white)
+                                    Text("\(backup.size) · \(backup.date.formatted(date: .abbreviated, time: .omitted))")
+                                        .font(.caption)
+                                        .foregroundStyle(.white.opacity(0.6))
+                                }
+                                Spacer()
+                                Button(restoringId == backup.id ? "恢复中..." : "恢复") {
+                                    startRestore(backup: backup)
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                                .disabled(restoringId != nil)
+                            }
 
-                    if restoringId == backup.id {
-                        ProgressView(value: restoreProgress, total: 100)
-                            .tint(.blue)
-                        Text("\(Int(restoreProgress))% · 预计 \(estimatedTime)s")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            if restoringId == backup.id {
+                                ProgressView(value: restoreProgress, total: 100)
+                                    .tint(.purple)
+                                Text("\(Int(restoreProgress))% · 预计 \(estimatedTime)s")
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.6))
+                            }
+                        }
+                        .padding(14)
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                        )
+                        .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 2)
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                backupToDelete = backup
+                                showDeleteConfirmation = true
+                            } label: {
+                                Label("删除", systemImage: "trash")
+                            }
+                        }
                     }
                 }
-                .padding(.vertical, 4)
-            }
 
-            Section {
                 Button {
                     let newBackup = BackupInfo(name: "手动备份", size: "\(Int.random(in: 100...150)) MB")
                     store.backups.insert(newBackup, at: 0)
                 } label: {
                     Label("创建备份", systemImage: "plus")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                        )
+                        .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 2)
                 }
+                .buttonStyle(.plain)
             }
+            .padding(.horizontal)
+            .padding(.top, 12)
+            .padding(.bottom, 20)
         }
-        .listStyle(.insetGrouped)
         .navigationTitle("备份管理")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .background {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.05, green: 0.1, blue: 0.2),
+                    Color(red: 0.1, green: 0.2, blue: 0.4),
+                    Color(red: 0.15, green: 0.15, blue: 0.3)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+        }
+        .alert("确认删除", isPresented: $showDeleteConfirmation) {
+            Button("取消", role: .cancel) { }
+            Button("删除", role: .destructive) {
+                if let backup = backupToDelete {
+                    store.deleteBackup(backup)
+                }
+                backupToDelete = nil
+            }
+        } message: {
+            Text("确定要删除备份 \"\(backupToDelete?.name ?? "")\" 吗？此操作不可撤销。")
+        }
     }
 
     private func startRestore(backup: BackupInfo) {
@@ -408,30 +591,51 @@ struct StatsView: View {
     ]
 
     var body: some View {
-        List {
+        ScrollView {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 ForEach(stats, id: \.label) { stat in
                     VStack(spacing: 6) {
                         Image(systemName: stat.icon)
                             .font(.title2)
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(.cyan)
                         Text(stat.value)
                             .font(.title2)
                             .fontWeight(.semibold)
+                            .foregroundStyle(.white)
                         Text(stat.label)
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.white.opacity(0.6))
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color(.systemGroupedBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                    )
+                    .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 2)
                 }
             }
-            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            .padding(.horizontal)
+            .padding(.top, 12)
+            .padding(.bottom, 20)
         }
-        .listStyle(.insetGrouped)
         .navigationTitle("性能统计")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .background {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.05, green: 0.1, blue: 0.2),
+                    Color(red: 0.1, green: 0.2, blue: 0.4),
+                    Color(red: 0.15, green: 0.15, blue: 0.3)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+        }
     }
 }

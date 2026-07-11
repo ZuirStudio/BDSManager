@@ -17,7 +17,6 @@ struct ConsoleView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // 快捷命令
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(quickCommands, id: \.1) { cmd in
@@ -26,10 +25,16 @@ struct ConsoleView: View {
                             } label: {
                                 Text(cmd.0)
                                     .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(.white)
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 8)
-                                    .background(Color(.systemGroupedBackground))
+                                    .background(.ultraThinMaterial)
                                     .clipShape(Capsule())
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+                                    )
                             }
                             .buttonStyle(.plain)
                         }
@@ -39,33 +44,38 @@ struct ConsoleView: View {
                 }
 
                 Divider()
+                    .background(Color.white.opacity(0.1))
 
-                // 终端输出
                 ScrollViewReader { proxy in
                     ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 4) {
+                        LazyVStack(alignment: .leading, spacing: 6) {
                             if store.consoleMessages.isEmpty {
-                                VStack(spacing: 8) {
+                                VStack(spacing: 12) {
                                     Image(systemName: "terminal")
-                                        .font(.largeTitle)
-                                        .foregroundStyle(.secondary)
+                                        .font(.system(size: 48))
+                                        .foregroundStyle(.white.opacity(0.5))
                                     Text("输入命令开始使用")
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(.white.opacity(0.6))
                                 }
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .frame(maxWidth: .infinity)
                                 .padding(.top, 60)
                             } else {
                                 ForEach(store.consoleMessages) { msg in
-                                    HStack(alignment: .top) {
+                                    HStack(alignment: .top, spacing: 8) {
                                         Text(msg.timestamp.formatted(date: .omitted, time: .shortened))
                                             .font(.caption2)
-                                            .foregroundStyle(.tertiary)
+                                            .foregroundStyle(.white.opacity(0.3))
                                             .frame(width: 50, alignment: .leading)
 
                                         Text(msg.content)
                                             .font(.system(.caption, design: .monospaced))
                                             .foregroundStyle(messageColor(for: msg.type))
                                     }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(msg.type == .command ? Color.blue.opacity(0.1) : (msg.type == .error ? Color.red.opacity(0.1) : Color.clear))
+                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                     .id(msg.id)
                                 }
                             }
@@ -80,12 +90,21 @@ struct ConsoleView: View {
                 }
 
                 Divider()
+                    .background(Color.white.opacity(0.1))
 
-                // 命令输入
                 HStack(spacing: 8) {
                     TextField("输入命令...", text: $commandText)
-                        .textFieldStyle(.roundedBorder)
+                        .textFieldStyle(.plain)
                         .font(.system(.body, design: .monospaced))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+                        )
                         .focused($isInputFocused)
                         .onSubmit { sendCommand() }
 
@@ -94,14 +113,29 @@ struct ConsoleView: View {
                     } label: {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.title2)
+                            .foregroundStyle(commandText.isEmpty ? .white.opacity(0.3) : .blue)
                     }
                     .disabled(commandText.isEmpty)
                 }
                 .padding(.horizontal)
                 .padding(.vertical, 8)
-                .background(Color(.systemBackground))
+                .background(.ultraThinMaterial)
             }
             .navigationTitle("控制台")
+            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .background {
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.05, green: 0.1, blue: 0.2),
+                        Color(red: 0.1, green: 0.2, blue: 0.4),
+                        Color(red: 0.15, green: 0.15, blue: 0.3)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+            }
         }
     }
 
@@ -115,9 +149,9 @@ struct ConsoleView: View {
     private func messageColor(for type: ConsoleMessage.MessageType) -> Color {
         switch type {
         case .command: return .blue
-        case .response: return .primary
+        case .response: return .white
         case .error: return .red
-        case .info: return .secondary
+        case .info: return .white.opacity(0.6)
         }
     }
 }

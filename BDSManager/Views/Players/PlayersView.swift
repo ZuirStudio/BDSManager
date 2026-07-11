@@ -31,6 +31,8 @@ struct PlayersView: View {
                 }
             }
             .navigationTitle("玩家管理")
+            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .sheet(isPresented: $showPlayerInfo) {
                 if let player = selectedPlayer {
                     PlayerInfoSheet(player: player)
@@ -58,148 +60,297 @@ struct PlayersView: View {
                     Button("取消", role: .cancel) { }
                 }
             }
+            .background {
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.05, green: 0.1, blue: 0.2),
+                        Color(red: 0.1, green: 0.2, blue: 0.4),
+                        Color(red: 0.15, green: 0.15, blue: 0.3)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+            }
         }
     }
 
     // MARK: - 在线玩家
     private var onlinePlayersList: some View {
-        List {
-            if store.onlinePlayers.isEmpty {
-                ContentUnavailableView("没有在线玩家", systemImage: "person.2")
-            } else {
-                ForEach(store.onlinePlayers) { player in
-                    HStack(spacing: 12) {
-                        Circle()
-                            .fill(Color.green)
-                            .frame(width: 10, height: 10)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(player.name)
-                                .font(.headline)
-                            HStack(spacing: 8) {
-                                Text(player.gamemodeLabel)
-                                Text("·")
-                                Text("\(player.ping)ms")
-                            }
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-
-                        if store.activeServer?.ops.contains(where: { $0.name == player.name }) == true {
-                            Image(systemName: "crown.fill")
-                                .foregroundStyle(.yellow)
-                                .font(.caption)
-                        }
+        ScrollView {
+            LazyVStack(spacing: 10) {
+                if store.onlinePlayers.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "person.2")
+                            .font(.system(size: 50))
+                            .foregroundStyle(.white.opacity(0.5))
+                        Text("没有在线玩家")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.white)
                     }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        selectedPlayer = player
-                        showActionSheet = true
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 60)
+                } else {
+                    ForEach(store.onlinePlayers) { player in
+                        Button {
+                            selectedPlayer = player
+                            showActionSheet = true
+                        } label: {
+                            GlassPlayerRow(player: player, isOp: store.activeServer?.ops.contains(where: { $0.name == player.name }) == true)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
+            .padding(.horizontal)
+            .padding(.top, 12)
+            .padding(.bottom, 20)
         }
-        .listStyle(.insetGrouped)
     }
 
     // MARK: - 常驻玩家
     private var residentPlayersList: some View {
-        List {
-            if let server = store.activeServer {
-                let onlineResidents = server.residentPlayers.filter { rp in
-                    store.onlinePlayers.contains(where: { $0.name == rp.name })
-                }
-                let offlineResidents = server.residentPlayers.filter { rp in
-                    !store.onlinePlayers.contains(where: { $0.name == rp.name })
-                }
+        ScrollView {
+            LazyVStack(spacing: 10) {
+                if let server = store.activeServer {
+                    let onlineResidents = server.residentPlayers.filter { rp in
+                        store.onlinePlayers.contains(where: { $0.name == rp.name })
+                    }
+                    let offlineResidents = server.residentPlayers.filter { rp in
+                        !store.onlinePlayers.contains(where: { $0.name == rp.name })
+                    }
 
-                if !onlineResidents.isEmpty {
-                    Section("在线") {
+                    if !onlineResidents.isEmpty {
+                        sectionHeader(title: "在线")
                         ForEach(onlineResidents) { resident in
-                            HStack {
-                                Circle().fill(Color.green).frame(width: 10, height: 10)
-                                Text(resident.name)
-                                Spacer()
-                                Image(systemName: "crown.fill")
-                                    .foregroundStyle(.yellow)
-                                    .font(.caption)
-                                    .opacity(server.ops.contains(where: { $0.name == resident.name }) ? 1 : 0)
-                            }
+                            GlassResidentRow(resident: resident, isOp: server.ops.contains(where: { $0.name == resident.name }), isOnline: true)
+                                .contextMenu {
+                                    Button("设为管理员") { Task { await store.executeCommand("op \(resident.name)") } }
+                                    Button("取消管理员") { Task { await store.executeCommand("deop \(resident.name)") } }
+                                    Button("移除常驻", role: .destructive) { store.removeResident(resident) }
+                                }
                         }
                     }
-                }
 
-                if !offlineResidents.isEmpty {
-                    Section("离线") {
+                    if !offlineResidents.isEmpty {
+                        sectionHeader(title: "离线")
                         ForEach(offlineResidents) { resident in
-                            HStack {
-                                Circle().fill(Color.gray).frame(width: 10, height: 10)
-                                Text(resident.name)
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                Text("离线")
-                                    .font(.caption)
-                                    .foregroundStyle(.tertiary)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 2)
-                                    .background(Color(.systemGroupedBackground))
-                                    .clipShape(Capsule())
-                            }
-                            .contextMenu {
-                                Button("设为管理员") { Task { await store.executeCommand("op \(resident.name)") } }
-                                Button("取消管理员") { Task { await store.executeCommand("deop \(resident.name)") } }
-                                Button("移除常驻", role: .destructive) { store.removeResident(resident) }
-                            }
+                            GlassResidentRow(resident: resident, isOp: server.ops.contains(where: { $0.name == resident.name }), isOnline: false)
+                                .contextMenu {
+                                    Button("设为管理员") { Task { await store.executeCommand("op \(resident.name)") } }
+                                    Button("取消管理员") { Task { await store.executeCommand("deop \(resident.name)") } }
+                                    Button("移除常驻", role: .destructive) { store.removeResident(resident) }
+                                }
                         }
                     }
-                }
 
-                if server.residentPlayers.isEmpty {
-                    ContentUnavailableView("没有常驻玩家", systemImage: "person.badge.key")
+                    if server.residentPlayers.isEmpty {
+                        VStack(spacing: 16) {
+                            Image(systemName: "person.badge.key")
+                                .font(.system(size: 50))
+                                .foregroundStyle(.white.opacity(0.5))
+                            Text("没有常驻玩家")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.white)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 60)
+                    }
                 }
             }
+            .padding(.horizontal)
+            .padding(.top, 12)
+            .padding(.bottom, 20)
         }
-        .listStyle(.insetGrouped)
     }
 
     // MARK: - 管理员
     private var opsPlayersList: some View {
-        List {
-            if let server = store.activeServer, !server.ops.isEmpty {
-                ForEach(server.ops) { op in
-                    HStack(spacing: 12) {
+        ScrollView {
+            LazyVStack(spacing: 10) {
+                if let server = store.activeServer, !server.ops.isEmpty {
+                    ForEach(server.ops) { op in
+                        GlassOpRow(op: op)
+                            .contextMenu {
+                                Button("取消OP") { Task { await store.executeCommand("deop \(op.name)") } }
+                            }
+                    }
+                } else {
+                    VStack(spacing: 16) {
+                        Image(systemName: "crown")
+                            .font(.system(size: 50))
+                            .foregroundStyle(.white.opacity(0.5))
+                        Text("没有管理员")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.white)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 60)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.top, 12)
+            .padding(.bottom, 20)
+        }
+    }
+
+    private func sectionHeader(title: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.white.opacity(0.7))
+            Spacer()
+        }
+        .padding(.top, 4)
+    }
+}
+
+struct GlassPlayerRow: View {
+    let player: Player
+    let isOp: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Circle()
+                .fill(Color.green)
+                .frame(width: 10, height: 10)
+                .shadow(color: .green, radius: 3)
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(player.name)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.white)
+                    if isOp {
                         Image(systemName: "crown.fill")
                             .foregroundStyle(.yellow)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(op.name)
-                                .font(.headline)
-                            Text("权限等级: \(op.level)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-
-                        if op.bypassesPlayerLimit {
-                            Text("绕过人数限制")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.blue.opacity(0.1))
-                                .clipShape(Capsule())
-                        }
-                    }
-                    .contextMenu {
-                        Button("取消OP") { Task { await store.executeCommand("deop \(op.name)") } }
+                            .font(.caption)
                     }
                 }
-            } else {
-                ContentUnavailableView("没有管理员", systemImage: "crown")
+                HStack(spacing: 6) {
+                    Text(player.gamemodeLabel)
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.6))
+                    Text("·")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.3))
+                    Text("\(player.ping)ms")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .foregroundStyle(.white.opacity(0.3))
+                .font(.footnote)
+                .fontWeight(.semibold)
+        }
+        .padding(14)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 2)
+    }
+}
+
+struct GlassResidentRow: View {
+    let resident: ResidentPlayer
+    let isOp: Bool
+    let isOnline: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Circle()
+                .fill(isOnline ? Color.green : Color.gray)
+                .frame(width: 10, height: 10)
+                .shadow(color: isOnline ? .green : .gray, radius: 3)
+
+            Text(resident.name)
+                .font(.headline)
+                .fontWeight(.semibold)
+                .foregroundStyle(isOnline ? .white : .white.opacity(0.6))
+
+            Spacer()
+
+            if isOp {
+                Image(systemName: "crown.fill")
+                    .foregroundStyle(.yellow)
+                    .font(.caption)
+            }
+
+            if !isOnline {
+                Text("离线")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.5))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(.white.opacity(0.08))
+                    .clipShape(Capsule())
             }
         }
-        .listStyle(.insetGrouped)
+        .padding(14)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 2)
+    }
+}
+
+struct GlassOpRow: View {
+    let op: OpPlayer
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "crown.fill")
+                .foregroundStyle(.yellow)
+                .font(.title3)
+                .frame(width: 40, height: 40)
+                .background(Color.yellow.opacity(0.15))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(op.name)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.white)
+                Text("权限等级: \(op.level)")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+
+            Spacer()
+
+            if op.bypassesPlayerLimit {
+                Text("绕过人数限制")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.6))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.blue.opacity(0.2))
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(14)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 2)
     }
 }
 

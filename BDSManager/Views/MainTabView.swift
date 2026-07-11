@@ -26,5 +26,17 @@ struct MainTabView: View {
                 }
         }
         .tint(.blue)
+        .background {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.05, green: 0.1, blue: 0.2),
+                    Color(red: 0.1, green: 0.2, blue: 0.4),
+                    Color(red: 0.15, green: 0.15, blue: 0.3)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+        }
     }
 }
