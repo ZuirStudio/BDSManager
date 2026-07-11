@@ -42,29 +42,122 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
-		D10001 = {isa = PBXGroup; children = (D10002 D10010 D10008 D10007 D10006 D10009 D10005 D10004); sourceTree = "<group>"; };
-		D10002 = {isa = PBXGroup; children = (B10001); path = BDSManager; sourceTree = "<group>"; };
-		D10003 = {isa = PBXGroup; children = (B10002 B10003 B10004); path = Models; sourceTree = "<group>"; };
-		D10004 = {isa = PBXGroup; children = (B10005); path = Services; sourceTree = "<group>"; };
-		D10005 = {isa = PBXGroup; children = (B10006); path = ViewModels; sourceTree = "<group>"; };
-		D10006 = {isa = PBXGroup; children = (D10003 D10004 D10005 D10011 D10012 D10013 D10014 B10014); path = BDSManager; sourceTree = "<group>"; };
-		D10007 = {isa = PBXGroup; children = (B10007); path = Views; sourceTree = "<group>"; };
-		D10008 = {isa = PBXGroup; children = (D10007); path = BDSManager; sourceTree = "<group>"; };
-		D10009 = {isa = PBXGroup; children = (B10008 B10009 B10010); path = Servers; sourceTree = "<group>"; };
-		D10010 = {isa = PBXGroup; children = (B10011); path = Players; sourceTree = "<group>"; };
-		D10011 = {isa = PBXGroup; children = (D10009 D10010 D10012 D10013); path = Views; sourceTree = "<group>"; };
-		D10012 = {isa = PBXGroup; children = (B10012); path = Status; sourceTree = "<group>"; };
-		D10013 = {isa = PBXGroup; children = (B10013); path = Console; sourceTree = "<group>"; };
-		D10014 = {isa = PBXGroup; children = (D10002); sourceTree = "<group>"; };
+		D10001 = {
+			isa = PBXGroup;
+			children = (
+				D10002 /* BDSManager */,
+				D10011 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D10002 /* BDSManager */ = {
+			isa = PBXGroup;
+			children = (
+				B10001 /* BDSManagerApp.swift */,
+				B10014 /* Assets.xcassets */,
+				D10003 /* Models */,
+				D10004 /* Services */,
+				D10005 /* ViewModels */,
+				D10006 /* Views */,
+			);
+			path = BDSManager;
+			sourceTree = "<group>";
+		};
+		D10003 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				B10002 /* Server.swift */,
+				B10003 /* Player.swift */,
+				B10004 /* ModInfo.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		D10004 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				B10005 /* RCONService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		D10005 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				B10006 /* ServerStore.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		D10006 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				B10007 /* MainTabView.swift */,
+				D10007 /* Servers */,
+				D10008 /* Players */,
+				D10009 /* Status */,
+				D10010 /* Console */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		D10007 /* Servers */ = {
+			isa = PBXGroup;
+			children = (
+				B10008 /* ServersView.swift */,
+				B10009 /* AddServerView.swift */,
+				B10010 /* ServerManageView.swift */,
+			);
+			path = Servers;
+			sourceTree = "<group>";
+		};
+		D10008 /* Players */ = {
+			isa = PBXGroup;
+			children = (
+				B10011 /* PlayersView.swift */,
+			);
+			path = Players;
+			sourceTree = "<group>";
+		};
+		D10009 /* Status */ = {
+			isa = PBXGroup;
+			children = (
+				B10012 /* StatusView.swift */,
+			);
+			path = Status;
+			sourceTree = "<group>";
+		};
+		D10010 /* Console */ = {
+			isa = PBXGroup;
+			children = (
+				B10013 /* ConsoleView.swift */,
+			);
+			path = Console;
+			sourceTree = "<group>";
+		};
+		D10011 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C10001 /* BDSManager.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
 		E10001 /* BDSManager */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = F10003;
-			buildPhases = (E10002 E10003 E10004 E10005);
-			buildRules = ();
-			dependencies = ();
+			buildConfigurationList = F10002;
+			buildPhases = (
+				E10002 /* Sources */,
+				E10003 /* Frameworks */,
+				E10004 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
 			name = BDSManager;
 			productName = BDSManager;
 			productReference = C10001;
@@ -73,26 +166,80 @@
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		E10010 = {
+		E10010 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 1600;
-				TargetAttributes = { E10001 = { CreatedOnToolsVersion = 16.0; }; };
+				TargetAttributes = {
+					E10001 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
 			};
 			buildConfigurationList = F10001;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = "zh-Hans";
 			hasScannedForEncodings = 0;
-			knownRegions = (en "zh-Hans");
+			knownRegions = (
+				en,
+				"zh-Hans",
+				Base,
+			);
 			mainGroup = D10001;
-			productRefGroup = D10014;
+			productRefGroup = D10011;
 			projectDirPath = "";
 			projectRoot = "";
-			targets = (E10001);
+			targets = (
+				E10001 /* BDSManager */,
+			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E10004 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10014 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E10002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10001 /* BDSManagerApp.swift in Sources */,
+				A10002 /* Server.swift in Sources */,
+				A10003 /* Player.swift in Sources */,
+				A10004 /* ModInfo.swift in Sources */,
+				A10005 /* RCONService.swift in Sources */,
+				A10006 /* ServerStore.swift in Sources */,
+				A10007 /* MainTabView.swift in Sources */,
+				A10008 /* ServersView.swift in Sources */,
+				A10009 /* AddServerView.swift in Sources */,
+				A10010 /* ServerManageView.swift in Sources */,
+				A10011 /* PlayersView.swift in Sources */,
+				A10012 /* StatusView.swift in Sources */,
+				A10013 /* ConsoleView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E10003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		G10001 /* Debug */ = {
@@ -142,13 +289,19 @@
 /* Begin XCConfigurationList section */
 		F10001 /* Build configuration list for PBXProject "BDSManager" */ = {
 			isa = XCConfigurationList;
-			buildConfigurations = (G10001 G10002);
+			buildConfigurations = (
+				G10001 /* Debug */,
+				G10002 /* Release */,
+			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		F10003 /* Build configuration list for PBXNativeTarget "BDSManager" */ = {
+		F10002 /* Build configuration list for PBXNativeTarget "BDSManager" */ = {
 			isa = XCConfigurationList;
-			buildConfigurations = (G10001 G10002);
+			buildConfigurations = (
+				G10001 /* Debug */,
+				G10002 /* Release */,
+			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
