@@ -13,6 +13,7 @@ class ServerStore: ObservableObject {
     @Published var serverVersion: String = "未知"
     @Published var serverLevelName: String = "未知"
     @Published var backups: [BackupInfo] = []
+    @Published var lastError: String? = nil
 
     private let rconService = RCONService()
     private let saveKey = "bds_servers"
@@ -55,13 +56,45 @@ class ServerStore: ObservableObject {
 
     // MARK: - 连接
     func connectToServer() async {
-        guard let server = activeServer else { return }
+        guard let server = activeServer else {
+            lastError = "没有选择服务器"
+            return
+        }
+
+        // 验证必填字段
+        guard !server.host.isEmpty else {
+            lastError = "服务器地址不能为空"
+            connectionStatus = .disconnected
+            return
+        }
+
+        guard !server.rconPassword.isEmpty else {
+            lastError = "RCON 密码不能为空"
+            connectionStatus = .disconnected
+            return
+        }
+
+        lastError = nil
         connectionStatus = .connecting
+
         do {
             let success = try await rconService.connect(host: server.host, port: server.rconPort, password: server.rconPassword)
-            connectionStatus = success ? .connected : .disconnected
+            if success {
+                connectionStatus = .connected
+                consoleMessages.append(ConsoleMessage(content: "已连接到 \(server.name)", type: .info))
+            } else {
+                connectionStatus = .disconnected
+                lastError = "认证失败，请检查 RCON 密码"
+                consoleMessages.append(ConsoleMessage(content: "连接失败：RCON 认证失败", type: .error))
+            }
+        } catch let error as RCONError {
+            connectionStatus = .disconnected
+            lastError = error.localizedDescription
+            consoleMessages.append(ConsoleMessage(content: "连接失败：\(error.localizedDescription)", type: .error))
         } catch {
             connectionStatus = .disconnected
+            lastError = error.localizedDescription
+            consoleMessages.append(ConsoleMessage(content: "连接失败：\(error.localizedDescription)", type: .error))
         }
     }
 

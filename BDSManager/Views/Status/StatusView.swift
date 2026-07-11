@@ -48,10 +48,25 @@ struct StatusView: View {
                         .tint(.red)
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
-                } else {
+                } else if store.connectionStatus != .connecting {
                     Button("连接") { Task { await store.connectToServer() } }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
+                }
+            }
+
+            if store.connectionStatus == .connecting {
+                ProgressView()
+                    .tint(.yellow)
+            }
+
+            if let error = store.lastError, store.connectionStatus == .disconnected {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                    Text(error)
+                        .font(.subheadline)
+                        .foregroundStyle(.red.opacity(0.9))
                 }
             }
         }
