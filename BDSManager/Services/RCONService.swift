@@ -107,21 +107,30 @@ actor RCONService {
 
     // MARK: - 认证
     private func authenticate(password: String) async throws -> Bool {
-        requestId = 0
         // 空密码直接返回失败
         guard !password.isEmpty else {
             throw RCONError.authenticationFailed
         }
-        let response = try await sendPacket(type: 3, body: password)
-        guard response.type == 2 else { return false }
+
+        // RCON 协议要求认证包的 id 必须是 0
+        let authPacket = RCONPacket(id: 0, type: 3, body: password)
+        let response = try await sendRawPacket(authPacket)
+
+        // 认证成功时，服务器返回的包 type 为 2，id 为 0
+        guard response.type == 2, response.id == 0 else {
+            throw RCONError.authenticationFailed
+        }
         isConnected = true
+        requestId = 1 // 认证成功后，后续命令从 1 开始
         return true
     }
 
     // MARK: - 发送命令
     func sendCommand(_ command: String) async throws -> String {
         guard isConnected else { throw RCONError.notConnected }
-        let response = try await sendPacket(type: 2, body: command)
+        requestId &+= 1
+        let packet = RCONPacket(id: requestId, type: 2, body: command)
+        let response = try await sendRawPacket(packet)
         return response.body
     }
 
@@ -134,9 +143,7 @@ actor RCONService {
     }
 
     // MARK: - 发送数据包
-    private func sendPacket(type: Int32, body: String) async throws -> RCONPacket {
-        requestId &+= 1
-        let packet = RCONPacket(id: requestId, type: type, body: body)
+    private func sendRawPacket(_ packet: RCONPacket) async throws -> RCONPacket {
 
         guard let connection = connection else { throw RCONError.notConnected }
         guard connection.state == .ready else { throw RCONError.notConnected }
