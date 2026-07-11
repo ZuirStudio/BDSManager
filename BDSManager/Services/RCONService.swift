@@ -16,34 +16,35 @@ actor RCONService {
         self.port = UInt16(port)
         self.password = password
 
-        let endpoint = NWEndpoint.hostPort(
-            .init(host),
-            .init(rawValue: self.port)
-        )
+        let nwHost = NWEndpoint.Host(host)
+        guard let nwPort = NWEndpoint.Port(rawValue: self.port) else {
+            throw RCONError.connectionFailed
+        }
+        let endpoint = NWEndpoint.hostPort(host: nwHost, port: nwPort)
 
         let parameters = NWParameters.tcp
         connection = NWConnection(to: endpoint, using: parameters)
 
         return try await withCheckedThrowingContinuation { continuation in
-            connection?.stateUpdateHandler = { state in
+            connection?.stateUpdateHandler = { [weak self] state in
                 switch state {
                 case .ready:
-                    self.isConnected = true
                     Task {
+                        await self?.setConnected(true)
                         do {
-                            let authResult = try await self.authenticate(password: password)
+                            let authResult = try await self?.authenticate(password: password) ?? false
                             continuation.resume(returning: authResult)
                         } catch {
                             continuation.resume(returning: false)
                         }
                     }
                 case .failed(let error):
-                    self.isConnected = false
+                    Task { await self?.setConnected(false) }
                     continuation.resume(throwing: error)
-                case .waiting, .setup:
+                case .waiting, .setup, .preparing:
                     break
                 case .cancelled:
-                    self.isConnected = false
+                    Task { await self?.setConnected(false) }
                     continuation.resume(returning: false)
                 @unknown default:
                     break
@@ -110,6 +111,11 @@ actor RCONService {
     // MARK: - 获取状态
     func getConnectionStatus() -> Bool {
         isConnected
+    }
+
+    // MARK: - 设置连接状态（actor 内部调用）
+    private func setConnected(_ value: Bool) {
+        isConnected = value
     }
 }
 
